@@ -1,0 +1,10 @@
+---
+description: Rules specific to the Vampire Survivor game logic and Pygame implementation.
+globs: "game/**/*.py"
+alwaysApply: false
+---
+# Game Development Rules
+- **Engine:** Pygame.
+- **Pattern:** ECS where possible.
+- **Performance:** Use Pygame Groups.
+- **Subfolders:** Respect folder hierarchy (e.g., `game/scripts/` for utilities).

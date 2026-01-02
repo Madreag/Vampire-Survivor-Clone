@@ -1,0 +1,13 @@
+---
+description: Critical Git workflow: Main vs Nightly branches, and commit protocols.
+globs: "*"
+alwaysApply: true
+---
+# Critical Git Workflow Rules
+1. **Branching Strategy:**
+   - **main**: STABLE RELEASE only.
+   - **nightly**: DEVELOPMENT branch. Merge target.
+   - **Feature Branches**: ALWAYS create from nightly. Name: feature/xyz.
+2. **Commit Protocol:**
+   - Verify branch before edit.
+   - Descriptive commit messages.

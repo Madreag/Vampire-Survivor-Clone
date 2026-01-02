@@ -1,0 +1,13 @@
+---
+description: Python coding standards, type hinting, ECS patterns, and testing requirements.
+globs: "**/*.py"
+alwaysApply: false
+---
+# Coding Standards (Python)
+- **Structure:** Group related classes logically. (Avoid "one class per file" unless necessary for size).
+- **Type Hinting:** Mandatory for all new functions.
+- **Composition:** Prefer Composition over Inheritance.
+- **Testing:** - STRICT REQUIREMENT: Create/update `pytest` unit tests for every new feature.
+  - Location: `tests/` folder.
+- **Error Handling:** - Use specific `try-except` blocks (avoid bare `except:`).
+  - Log errors using the `logging` module, do not just print.

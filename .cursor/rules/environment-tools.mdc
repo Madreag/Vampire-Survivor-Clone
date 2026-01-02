@@ -1,0 +1,10 @@
+---
+description: Environment details for WSL2, Live-SWE-Agent integration, and file paths.
+globs: "*"
+alwaysApply: true
+---
+# Environment & Tools
+- **System:** Linux (Ubuntu) via WSL2.
+- **Paths:** Use forward slashes (/). No Windows paths.
+- **Ignored:** swe_agent_traces/, workspace/, .venv/
+- **Agent:** You clean up after the Live-SWE-Agent.
