@@ -26,6 +26,12 @@ python main.py
 
 ## Game Features
 
+### Audio
+- **Background Music**: Procedurally generated background music that plays continuously
+- **Music Toggle**: Turn music ON/OFF from the Options menu
+- **Volume Slider**: Adjust music volume (0-100%) using the slider or LEFT/RIGHT keys
+- **Sound Effects**: Various sound effects for pickups, level-ups, hits, and death
+
 ### Player
 - Auto-attacking weapons
 - Stats: HP, Move Speed, Pickup Radius, Might (damage), Cooldown Reduction, Armor, Regen
@@ -67,6 +73,13 @@ python main.py
 - Choose 1 of 3 upgrades on level up
 - Weapons can be leveled up to level 8
 - Max 6 weapons and 6 passives
+
+## Options Menu
+
+Access the Options menu from the Main Menu to:
+- **Music: ON/OFF** - Toggle background music
+- **Music Volume** - Adjust volume with slider or LEFT/RIGHT keys
+- **Cheats** - Access cheat settings
 
 ## High Scores
 
