@@ -71,3 +71,5 @@ python main.py
 ## High Scores
 
 High scores are saved to highscore.json in the game directory.
+
+Ethan helped.
