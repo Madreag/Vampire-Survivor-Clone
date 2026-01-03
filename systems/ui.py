@@ -625,16 +625,25 @@ class MainMenu:
 
 
 class OptionsMenu:
-    """Options menu with Cheats submenu."""
+    """Options menu with music controls and Cheats submenu."""
     
-    def __init__(self):
+    def __init__(self, sound_manager=None):
         self.display_surface = pygame.display.get_surface()
         self.font = pygame.font.Font(None, UI_SETTINGS['font_size'])
+        self.small_font = pygame.font.Font(None, UI_SETTINGS['small_font_size'])
         self.large_font = pygame.font.Font(None, UI_SETTINGS['large_font_size'])
         
         self.active = False
-        self.options = ['Cheats', 'Back']
+        self.sound_manager = sound_manager
         self.selected_index = 0
+        
+        # Volume slider state
+        self.dragging_volume = False
+        self.volume_slider_rect = None
+    
+    def set_sound_manager(self, sound_manager):
+        """Set the sound manager reference."""
+        self.sound_manager = sound_manager
     
     def show(self):
         """Show the options menu."""
@@ -644,39 +653,113 @@ class OptionsMenu:
     def hide(self):
         """Hide the options menu."""
         self.active = False
+        self.dragging_volume = False
+    
+    def _get_options(self):
+        """Get list of menu options."""
+        music_status = "ON" if (self.sound_manager and self.sound_manager.is_music_enabled()) else "OFF"
+        return [
+            f'Music: {music_status}',
+            'Music Volume',
+            'Cheats',
+            'Back'
+        ]
     
     def handle_input(self, event):
         """Handle input for menu navigation."""
         if not self.active:
             return None
         
+        options = self._get_options()
+        
         if event.type == pygame.KEYDOWN:
             if event.key in (pygame.K_UP, pygame.K_w):
-                self.selected_index = (self.selected_index - 1) % len(self.options)
+                self.selected_index = (self.selected_index - 1) % len(options)
             elif event.key in (pygame.K_DOWN, pygame.K_s):
-                self.selected_index = (self.selected_index + 1) % len(self.options)
+                self.selected_index = (self.selected_index + 1) % len(options)
+            elif event.key in (pygame.K_LEFT, pygame.K_a):
+                # Decrease volume if on volume option
+                if self.selected_index == 1 and self.sound_manager:
+                    new_vol = max(0.0, self.sound_manager.get_music_volume() - 0.1)
+                    self.sound_manager.set_music_volume(new_vol)
+            elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                # Increase volume if on volume option
+                if self.selected_index == 1 and self.sound_manager:
+                    new_vol = min(1.0, self.sound_manager.get_music_volume() + 0.1)
+                    self.sound_manager.set_music_volume(new_vol)
             elif event.key in (pygame.K_RETURN, pygame.K_SPACE):
-                return self.options[self.selected_index].lower()
+                return self._select_option()
             elif event.key == pygame.K_ESCAPE:
                 return 'back'
         
         elif event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                return self._handle_click(event.pos)
+                # Check if clicking on volume slider
+                if self.volume_slider_rect and self.volume_slider_rect.collidepoint(event.pos):
+                    self.dragging_volume = True
+                    self._update_volume_from_mouse(event.pos[0])
+                else:
+                    result = self._handle_click(event.pos)
+                    if result:
+                        return result
+        
+        elif event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                self.dragging_volume = False
         
         elif event.type == pygame.MOUSEMOTION:
-            self._handle_hover(event.pos)
+            if self.dragging_volume:
+                self._update_volume_from_mouse(event.pos[0])
+            else:
+                self._handle_hover(event.pos)
+        
+        return None
+    
+    def _update_volume_from_mouse(self, mouse_x):
+        """Update volume based on mouse position on slider."""
+        if self.volume_slider_rect and self.sound_manager:
+            # Calculate volume from mouse position
+            slider_x = self.volume_slider_rect.x
+            slider_width = self.volume_slider_rect.width
+            relative_x = mouse_x - slider_x
+            volume = max(0.0, min(1.0, relative_x / slider_width))
+            self.sound_manager.set_music_volume(volume)
+    
+    def _select_option(self):
+        """Select the current option."""
+        options = self._get_options()
+        option = options[self.selected_index]
+        
+        if option.startswith('Music:'):
+            # Toggle music
+            if self.sound_manager:
+                self.sound_manager.toggle_music()
+            return None
+        elif option == 'Music Volume':
+            # Volume is adjusted with left/right keys
+            return None
+        elif option == 'Cheats':
+            return 'cheats'
+        elif option == 'Back':
+            return 'back'
         
         return None
     
     def _get_option_rects(self):
         """Get rectangles for menu options."""
         rects = []
-        start_y = WINDOW_HEIGHT // 2 - 30
+        start_y = WINDOW_HEIGHT // 2 - 80
         
-        for i in range(len(self.options)):
-            rect = pygame.Rect(WINDOW_WIDTH // 2 - 120, start_y + i * 60, 240, 50)
+        options = self._get_options()
+        current_y = start_y
+        for i in range(len(options)):
+            rect = pygame.Rect(WINDOW_WIDTH // 2 - 150, current_y, 300, 50)
             rects.append(rect)
+            # Add extra spacing after Music Volume option (index 1) to accommodate the slider
+            if i == 1:
+                current_y += 110  # Extra space for volume slider (60 + 50 for slider and text)
+            else:
+                current_y += 60
         
         return rects
     
@@ -684,7 +767,8 @@ class OptionsMenu:
         """Handle mouse click."""
         for i, rect in enumerate(self._get_option_rects()):
             if rect.collidepoint(pos):
-                return self.options[i].lower()
+                self.selected_index = i
+                return self._select_option()
         return None
     
     def _handle_hover(self, pos):
@@ -704,11 +788,14 @@ class OptionsMenu:
         
         # Title
         draw_text(self.display_surface, "OPTIONS",
-                 (WINDOW_WIDTH // 2, 150),
+                 (WINDOW_WIDTH // 2, 100),
                  self.large_font, COLORS['gold'], center=True)
         
+        options = self._get_options()
+        option_rects = self._get_option_rects()
+        
         # Options
-        for i, (option, rect) in enumerate(zip(self.options, self._get_option_rects())):
+        for i, (option, rect) in enumerate(zip(options, option_rects)):
             selected = i == self.selected_index
             
             bg_color = COLORS['gray'] if selected else COLORS['dark_gray']
@@ -718,13 +805,61 @@ class OptionsMenu:
             pygame.draw.rect(self.display_surface, border_color, rect, 2)
             
             text_color = COLORS['gold'] if selected else COLORS['white']
+            
+            # Special handling for music toggle - color based on state
+            if option.startswith('Music:'):
+                if 'ON' in option:
+                    text_color = COLORS['green'] if not selected else COLORS['gold']
+                else:
+                    text_color = COLORS['red'] if not selected else COLORS['gold']
+            
             draw_text(self.display_surface, option,
                      rect.center, self.font, text_color, center=True)
         
+        # Draw volume slider below the volume option
+        volume_option_index = 1  # Index of 'Music Volume' option
+        if volume_option_index < len(option_rects):
+            volume_rect = option_rects[volume_option_index]
+            slider_y = volume_rect.bottom + 10
+            slider_width = 300
+            slider_height = 20
+            slider_x = WINDOW_WIDTH // 2 - slider_width // 2
+            
+            self.volume_slider_rect = pygame.Rect(slider_x, slider_y, slider_width, slider_height)
+            
+            # Draw slider background
+            pygame.draw.rect(self.display_surface, COLORS['dark_gray'], self.volume_slider_rect)
+            pygame.draw.rect(self.display_surface, COLORS['white'], self.volume_slider_rect, 2)
+            
+            # Draw filled portion based on volume
+            if self.sound_manager:
+                volume = self.sound_manager.get_music_volume()
+                fill_width = int(slider_width * volume)
+                if fill_width > 0:
+                    fill_rect = pygame.Rect(slider_x, slider_y, fill_width, slider_height)
+                    pygame.draw.rect(self.display_surface, COLORS['green'], fill_rect)
+                
+                # Draw volume percentage
+                volume_text = f"{int(volume * 100)}%"
+                draw_text(self.display_surface, volume_text,
+                         (WINDOW_WIDTH // 2, slider_y + slider_height + 15),
+                         self.small_font, COLORS['white'], center=True)
+            
+            # Draw slider handle
+            if self.sound_manager:
+                handle_x = slider_x + int(slider_width * self.sound_manager.get_music_volume())
+                handle_rect = pygame.Rect(handle_x - 5, slider_y - 3, 10, slider_height + 6)
+                pygame.draw.rect(self.display_surface, COLORS['gold'], handle_rect)
+        
         # Instructions
-        draw_text(self.display_surface, "Press ESC to go back",
+        draw_text(self.display_surface, "UP/DOWN to navigate | LEFT/RIGHT to adjust volume",
+                 (WINDOW_WIDTH // 2, WINDOW_HEIGHT - 80),
+                 self.small_font, COLORS['gray'], center=True)
+        draw_text(self.display_surface, "ENTER to select | ESC to go back",
                  (WINDOW_WIDTH // 2, WINDOW_HEIGHT - 50),
-                 self.font, COLORS['gray'], center=True)
+                 self.small_font, COLORS['gray'], center=True)
+
+
 
 
 class CheatsMenu:

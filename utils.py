@@ -230,13 +230,90 @@ def generate_beep(frequency, duration_ms, volume=0.3):
         return None
 
 
+
+def generate_background_music(duration_seconds=8, volume=0.3):
+    """Generate a simple procedural background music loop."""
+    try:
+        sample_rate = 22050
+        n_samples = int(sample_rate * duration_seconds)
+        
+        # Define a simple melody using frequencies (notes)
+        # Using a pentatonic scale for a pleasant sound
+        notes = [
+            (261.63, 0.5),   # C4
+            (293.66, 0.5),   # D4
+            (329.63, 0.5),   # E4
+            (392.00, 0.5),   # G4
+            (440.00, 0.5),   # A4
+            (392.00, 0.5),   # G4
+            (329.63, 0.5),   # E4
+            (293.66, 0.5),   # D4
+            (261.63, 1.0),   # C4 (longer)
+            (329.63, 0.5),   # E4
+            (392.00, 0.5),   # G4
+            (440.00, 1.0),   # A4 (longer)
+            (392.00, 0.5),   # G4
+            (329.63, 0.5),   # E4
+            (293.66, 0.5),   # D4
+            (261.63, 1.0),   # C4 (longer)
+        ]
+        
+        samples = []
+        current_sample = 0
+        note_index = 0
+        
+        while current_sample < n_samples:
+            freq, note_duration = notes[note_index % len(notes)]
+            note_samples = int(sample_rate * note_duration)
+            
+            for i in range(note_samples):
+                if current_sample >= n_samples:
+                    break
+                    
+                # Create a softer sound with envelope
+                t = i / note_samples
+                # Attack-decay envelope
+                if t < 0.1:
+                    envelope = t / 0.1
+                elif t > 0.7:
+                    envelope = (1 - t) / 0.3
+                else:
+                    envelope = 1.0
+                
+                # Mix multiple harmonics for richer sound
+                value = 0
+                value += math.sin(2 * math.pi * freq * current_sample / sample_rate) * 0.5
+                value += math.sin(2 * math.pi * freq * 2 * current_sample / sample_rate) * 0.25
+                value += math.sin(2 * math.pi * freq * 0.5 * current_sample / sample_rate) * 0.25
+                
+                sample_value = int(127 + 127 * volume * envelope * value * 0.5)
+                sample_value = max(0, min(255, sample_value))
+                samples.append(sample_value)
+                current_sample += 1
+            
+            note_index += 1
+        
+        buf = bytes(samples)
+        sound = pygame.mixer.Sound(buffer=buf)
+        sound.set_volume(volume)
+        return sound
+    except Exception as e:
+        print(f"Error generating background music: {e}")
+        return None
+
+
 class SoundManager:
-    """Manages game sounds."""
+    """Manages game sounds and background music."""
     
     def __init__(self):
         self.sounds = {}
         self.enabled = True
+        self.music_enabled = True
+        self.music_volume = 0.03
+        self.music_sound = None
+        self.music_channel = None
         self._init_sounds()
+        self._init_music()
     
     def _init_sounds(self):
         """Initialize all game sounds."""
@@ -264,6 +341,18 @@ class SoundManager:
         except Exception:
             self.enabled = False
     
+    def _init_music(self):
+        """Initialize background music."""
+        try:
+            self.music_sound = generate_background_music(8, self.music_volume)
+            # Reserve a channel for music
+            if pygame.mixer.get_num_channels() < 8:
+                pygame.mixer.set_num_channels(8)
+            self.music_channel = pygame.mixer.Channel(7)  # Use last channel for music
+        except Exception as e:
+            print(f"Error initializing music: {e}")
+            self.music_sound = None
+    
     def play(self, sound_name):
         """Play a sound by name."""
         if self.enabled and sound_name in self.sounds and self.sounds[sound_name]:
@@ -271,6 +360,49 @@ class SoundManager:
                 self.sounds[sound_name].play()
             except Exception:
                 pass
+    
+    def play_music(self):
+        """Start playing background music."""
+        if self.music_enabled and self.music_sound and self.music_channel:
+            try:
+                self.music_channel.play(self.music_sound, loops=-1)
+                self.music_channel.set_volume(self.music_volume)
+            except Exception as e:
+                print(f"Error playing music: {e}")
+    
+    def stop_music(self):
+        """Stop background music."""
+        if self.music_channel:
+            try:
+                self.music_channel.stop()
+            except Exception:
+                pass
+    
+    def toggle_music(self):
+        """Toggle background music on/off."""
+        self.music_enabled = not self.music_enabled
+        if self.music_enabled:
+            self.play_music()
+        else:
+            self.stop_music()
+        return self.music_enabled
+    
+    def set_music_volume(self, volume):
+        """Set music volume (0.0 to 1.0)."""
+        self.music_volume = max(0.0, min(1.0, volume))
+        if self.music_channel:
+            try:
+                self.music_channel.set_volume(self.music_volume)
+            except Exception:
+                pass
+    
+    def get_music_volume(self):
+        """Get current music volume."""
+        return self.music_volume
+    
+    def is_music_enabled(self):
+        """Check if music is enabled."""
+        return self.music_enabled
 
 
 # High score management

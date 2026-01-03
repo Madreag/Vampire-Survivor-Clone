@@ -60,13 +60,16 @@ class Game:
         # Initialize menus first
         self._init_menus()
         
+        # Start background music
+        self.sound_manager.play_music()
+        
         # Font for watermark
         self.watermark_font = pygame.font.Font(None, 24)
     
     def _init_menus(self):
         """Initialize menu systems."""
         self.main_menu = MainMenu()
-        self.options_menu = OptionsMenu()
+        self.options_menu = OptionsMenu(self.sound_manager)
         self.cheats_menu = CheatsMenu(self.cheat_settings)
     
     def _init_game(self):
