@@ -309,7 +309,7 @@ class SoundManager:
         self.sounds = {}
         self.enabled = True
         self.music_enabled = True
-        self.music_volume = 0.3
+        self.music_volume = 0.03
         self.music_sound = None
         self.music_channel = None
         self._init_sounds()

@@ -751,9 +751,15 @@ class OptionsMenu:
         start_y = WINDOW_HEIGHT // 2 - 80
         
         options = self._get_options()
+        current_y = start_y
         for i in range(len(options)):
-            rect = pygame.Rect(WINDOW_WIDTH // 2 - 150, start_y + i * 60, 300, 50)
+            rect = pygame.Rect(WINDOW_WIDTH // 2 - 150, current_y, 300, 50)
             rects.append(rect)
+            # Add extra spacing after Music Volume option (index 1) to accommodate the slider
+            if i == 1:
+                current_y += 110  # Extra space for volume slider (60 + 50 for slider and text)
+            else:
+                current_y += 60
         
         return rects
     
